@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -7,9 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Slider } from '@/components/ui/slider';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import Icon from '@/components/ui/icon';
 
 interface Product {
@@ -22,24 +19,6 @@ interface Product {
   image: string;
   storage?: string;
   color?: string;
-  sellerId: number;
-  sellerName: string;
-}
-
-interface Message {
-  id: number;
-  senderId: number;
-  senderName: string;
-  text: string;
-  timestamp: Date;
-}
-
-interface Chat {
-  productId: number;
-  productTitle: string;
-  sellerId: number;
-  sellerName: string;
-  messages: Message[];
 }
 
 const categories = [
@@ -51,8 +30,6 @@ const categories = [
   { name: 'AirPods', icon: 'Headphones' },
 ];
 
-const cities = ['Москва', 'Санкт-Петербург', 'Казань', 'Екатеринбург', 'Новосибирск', 'Краснодар'];
-
 const mockProducts: Product[] = [
   {
     id: 1,
@@ -63,9 +40,7 @@ const mockProducts: Product[] = [
     city: 'Москва',
     image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=500',
     storage: '256GB',
-    color: 'Titanium',
-    sellerId: 1,
-    sellerName: 'Александр П.'
+    color: 'Titanium'
   },
   {
     id: 2,
@@ -76,9 +51,7 @@ const mockProducts: Product[] = [
     city: 'Санкт-Петербург',
     image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500',
     storage: '512GB',
-    color: 'Space Black',
-    sellerId: 2,
-    sellerName: 'Мария К.'
+    color: 'Space Black'
   },
   {
     id: 3,
@@ -89,9 +62,7 @@ const mockProducts: Product[] = [
     city: 'Москва',
     image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500',
     storage: '128GB',
-    color: 'Silver',
-    sellerId: 1,
-    sellerName: 'Александр П.'
+    color: 'Silver'
   },
   {
     id: 4,
@@ -101,9 +72,7 @@ const mockProducts: Product[] = [
     condition: 'Новый',
     city: 'Казань',
     image: 'https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=500',
-    color: 'Titanium',
-    sellerId: 3,
-    sellerName: 'Дмитрий С.'
+    color: 'Titanium'
   },
   {
     id: 5,
@@ -113,9 +82,7 @@ const mockProducts: Product[] = [
     condition: 'Новый',
     city: 'Екатеринбург',
     image: 'https://images.unsplash.com/photo-1606841837239-c5a1a4a07af7?w=500',
-    color: 'White',
-    sellerId: 4,
-    sellerName: 'Елена В.'
+    color: 'White'
   },
   {
     id: 6,
@@ -126,9 +93,7 @@ const mockProducts: Product[] = [
     city: 'Новосибирск',
     image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=500',
     storage: '256GB',
-    color: 'Blue',
-    sellerId: 5,
-    sellerName: 'Игорь Н.'
+    color: 'Blue'
   },
 ];
 
@@ -136,83 +101,14 @@ export default function Index() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [showFavorites, setShowFavorites] = useState(false);
-  const [selectedSeller, setSelectedSeller] = useState<number | null>(null);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200000]);
-  const [selectedCondition, setSelectedCondition] = useState<string>('all');
-  const [selectedCity, setSelectedCity] = useState<string>('all');
-  const [showFilters, setShowFilters] = useState(false);
-  const [chats, setChats] = useState<Chat[]>([]);
-  const [activeChat, setActiveChat] = useState<number | null>(null);
-  const [newMessage, setNewMessage] = useState('');
-
-  useEffect(() => {
-    const saved = localStorage.getItem('favorites');
-    if (saved) {
-      setFavorites(JSON.parse(saved));
-    }
-  }, []);
-
-  const toggleFavorite = (productId: number) => {
-    const newFavorites = favorites.includes(productId)
-      ? favorites.filter(id => id !== productId)
-      : [...favorites, productId];
-    setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
-  };
-
-  const startChat = (product: Product) => {
-    const existingChat = chats.find(c => c.productId === product.id);
-    if (!existingChat) {
-      const newChat: Chat = {
-        productId: product.id,
-        productTitle: product.title,
-        sellerId: product.sellerId,
-        sellerName: product.sellerName,
-        messages: []
-      };
-      setChats([...chats, newChat]);
-    }
-    setActiveChat(product.id);
-  };
-
-  const sendMessage = () => {
-    if (!newMessage.trim() || activeChat === null) return;
-    
-    const newMsg: Message = {
-      id: Date.now(),
-      senderId: 0,
-      senderName: 'Вы',
-      text: newMessage,
-      timestamp: new Date()
-    };
-
-    setChats(chats.map(chat => 
-      chat.productId === activeChat 
-        ? { ...chat, messages: [...chat.messages, newMsg] }
-        : chat
-    ));
-    setNewMessage('');
-  };
 
   const filteredProducts = mockProducts.filter(product => {
-    if (showFavorites && !favorites.includes(product.id)) return false;
-    if (selectedSeller !== null && product.sellerId !== selectedSeller) return false;
-    if (selectedCategory && product.category !== selectedCategory) return false;
-    if (selectedCondition !== 'all' && product.condition !== selectedCondition) return false;
-    if (selectedCity !== 'all' && product.city !== selectedCity) return false;
-    if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
-    
+    const matchesCategory = !selectedCategory || product.category === selectedCategory;
     const matchesSearch = !searchQuery || 
       product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return matchesSearch;
+    return matchesCategory && matchesSearch;
   });
-
-  const sellerProducts = selectedSeller ? mockProducts.filter(p => p.sellerId === selectedSeller) : [];
-  const currentSeller = selectedSeller ? mockProducts.find(p => p.sellerId === selectedSeller) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -220,11 +116,7 @@ export default function Index() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
-                setShowFavorites(false);
-                setSelectedSeller(null);
-                setSelectedCategory(null);
-              }}>
+              <div className="flex items-center gap-2">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                   <Icon name="Apple" size={24} className="text-background" />
                 </div>
@@ -234,109 +126,14 @@ export default function Index() {
               </div>
             </div>
             <nav className="hidden md:flex items-center gap-6">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => {
-                  setShowFavorites(!showFavorites);
-                  setSelectedSeller(null);
-                }}
-                className="relative"
-              >
-                <Icon name="Heart" size={18} className={`mr-2 ${showFavorites ? 'fill-current text-secondary' : ''}`} />
+              <Button variant="ghost" size="sm">
+                <Icon name="Heart" size={18} className="mr-2" />
                 Избранное
-                {favorites.length > 0 && (
-                  <Badge className="ml-2 bg-secondary" variant="secondary">
-                    {favorites.length}
-                  </Badge>
-                )}
               </Button>
-              
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="relative">
-                    <Icon name="MessageSquare" size={18} className="mr-2" />
-                    Сообщения
-                    {chats.length > 0 && (
-                      <Badge className="ml-2 bg-secondary" variant="secondary">
-                        {chats.length}
-                      </Badge>
-                    )}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent className="w-[400px] sm:w-[540px]">
-                  <SheetHeader>
-                    <SheetTitle>Сообщения</SheetTitle>
-                  </SheetHeader>
-                  <div className="mt-6">
-                    {chats.length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <Icon name="MessageCircle" size={48} className="mx-auto mb-4 opacity-50" />
-                        <p>У вас пока нет сообщений</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {chats.map(chat => (
-                          <Card 
-                            key={chat.productId}
-                            className={`cursor-pointer transition-all ${activeChat === chat.productId ? 'border-primary' : ''}`}
-                            onClick={() => setActiveChat(chat.productId)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
-                                  <Icon name="User" size={20} className="text-background" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold truncate">{chat.sellerName}</p>
-                                  <p className="text-sm text-muted-foreground truncate">{chat.productTitle}</p>
-                                  {chat.messages.length > 0 && (
-                                    <p className="text-sm mt-1 truncate">
-                                      {chat.messages[chat.messages.length - 1].text}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {activeChat === chat.productId && (
-                                <div className="mt-4 space-y-3">
-                                  <ScrollArea className="h-[200px] pr-4">
-                                    <div className="space-y-2">
-                                      {chat.messages.map(msg => (
-                                        <div key={msg.id} className={`flex ${msg.senderId === 0 ? 'justify-end' : 'justify-start'}`}>
-                                          <div className={`max-w-[70%] rounded-lg p-3 ${
-                                            msg.senderId === 0 
-                                              ? 'bg-secondary text-secondary-foreground' 
-                                              : 'bg-muted'
-                                          }`}>
-                                            <p className="text-sm">{msg.text}</p>
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </ScrollArea>
-                                  <div className="flex gap-2">
-                                    <Input
-                                      value={newMessage}
-                                      onChange={(e) => setNewMessage(e.target.value)}
-                                      placeholder="Написать сообщение..."
-                                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                                    />
-                                    <Button onClick={sendMessage} size="icon" className="bg-secondary hover:bg-secondary/90">
-                                      <Icon name="Send" size={18} />
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
-
+              <Button variant="ghost" size="sm">
+                <Icon name="MessageSquare" size={18} className="mr-2" />
+                Сообщения
+              </Button>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button className="bg-secondary hover:bg-secondary/90">
@@ -399,18 +196,7 @@ export default function Index() {
 
                     <div className="space-y-2">
                       <Label>Город</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Выберите город" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cities.map((city) => (
-                            <SelectItem key={city} value={city}>
-                              {city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Input placeholder="Москва" />
                     </div>
 
                     <div className="space-y-2">
@@ -436,282 +222,121 @@ export default function Index() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {selectedSeller ? (
-          <div className="animate-fade-in">
-            <Button 
-              variant="ghost" 
-              className="mb-6"
-              onClick={() => setSelectedSeller(null)}
+        <div className="mb-12 text-center animate-fade-in">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            Маркетплейс техники Apple
+          </h2>
+          <p className="text-xl text-muted-foreground mb-8">
+            Покупайте и продавайте оригинальную технику Apple
+          </p>
+          
+          <div className="max-w-2xl mx-auto relative">
+            <Icon name="Search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Поиск по объявлениям..."
+              className="pl-12 h-14 text-lg"
+            />
+          </div>
+        </div>
+
+        <div className="mb-12 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <h3 className="text-xl font-semibold mb-6">Категории</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.map((category) => (
+              <button
+                key={category.name}
+                onClick={() => setSelectedCategory(
+                  selectedCategory === category.name ? null : category.name
+                )}
+                className={`group p-6 rounded-xl border-2 transition-all hover:scale-105 ${
+                  selectedCategory === category.name
+                    ? 'border-primary bg-primary/10'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <Icon 
+                  name={category.icon as any} 
+                  size={32} 
+                  className={`mx-auto mb-3 transition-colors ${
+                    selectedCategory === category.name
+                      ? 'text-primary'
+                      : 'text-muted-foreground group-hover:text-primary'
+                  }`}
+                />
+                <p className={`font-medium transition-colors ${
+                  selectedCategory === category.name
+                    ? 'text-primary'
+                    : 'text-foreground'
+                }`}>
+                  {category.name}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-6 flex items-center justify-between">
+          <h3 className="text-xl font-semibold">
+            {selectedCategory ? `${selectedCategory}` : 'Все объявления'}
+            <span className="text-muted-foreground ml-2">
+              ({filteredProducts.length})
+            </span>
+          </h3>
+          {selectedCategory && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedCategory(null)}
             >
-              <Icon name="ArrowLeft" size={18} className="mr-2" />
-              Назад к объявлениям
+              <Icon name="X" size={16} className="mr-1" />
+              Сбросить фильтр
             </Button>
-            
-            <Card className="mb-8">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <Icon name="User" size={40} className="text-background" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold">{currentSeller?.sellerName}</h2>
-                    <p className="text-muted-foreground">На сайте с 2024</p>
-                    <div className="flex gap-2 mt-2">
-                      <Badge className="bg-secondary">
-                        {sellerProducts.length} объявлений
-                      </Badge>
-                    </div>
-                  </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          {filteredProducts.map((product, index) => (
+            <Card
+              key={product.id}
+              className="group cursor-pointer overflow-hidden border-border hover:border-primary/50 transition-all hover:scale-[1.02] animate-scale-in"
+              style={{ animationDelay: `${0.05 * index}s` }}
+              onClick={() => setSelectedProduct(product)}
+            >
+              <div className="aspect-square overflow-hidden bg-muted">
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+              </div>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <Badge
+                    variant={product.condition === 'Новый' ? 'default' : 'secondary'}
+                    className={product.condition === 'Новый' ? 'bg-secondary' : ''}
+                  >
+                    {product.condition}
+                  </Badge>
+                  <button className="text-muted-foreground hover:text-primary transition-colors">
+                    <Icon name="Heart" size={20} />
+                  </button>
                 </div>
+                <h4 className="font-semibold text-lg mb-1 line-clamp-1">
+                  {product.title}
+                </h4>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                  <Icon name="MapPin" size={14} />
+                  <span>{product.city}</span>
+                </div>
+                <p className="text-2xl font-bold text-primary">
+                  {product.price.toLocaleString('ru-RU')} ₽
+                </p>
               </CardContent>
             </Card>
-
-            <h3 className="text-xl font-semibold mb-6">Объявления продавца</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sellerProducts.map((product) => (
-                <Card
-                  key={product.id}
-                  className="group cursor-pointer overflow-hidden border-border hover:border-primary/50 transition-all hover:scale-[1.02]"
-                  onClick={() => setSelectedProduct(product)}
-                >
-                  <div className="aspect-square overflow-hidden bg-muted">
-                    <img
-                      src={product.image}
-                      alt={product.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  </div>
-                  <CardContent className="p-4">
-                    <Badge className={product.condition === 'Новый' ? 'bg-secondary' : ''}>
-                      {product.condition}
-                    </Badge>
-                    <h4 className="font-semibold text-lg mb-1 mt-2 line-clamp-1">
-                      {product.title}
-                    </h4>
-                    <p className="text-2xl font-bold text-primary">
-                      {product.price.toLocaleString('ru-RU')} ₽
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="mb-12 text-center animate-fade-in">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                {showFavorites ? 'Избранное' : 'Маркетплейс техники Apple'}
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                {showFavorites 
-                  ? `Сохранено ${favorites.length} товаров`
-                  : 'Покупайте и продавайте оригинальную технику Apple'
-                }
-              </p>
-              
-              <div className="max-w-2xl mx-auto flex gap-2">
-                <div className="flex-1 relative">
-                  <Icon name="Search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Поиск по объявлениям..."
-                    className="pl-12 h-14 text-lg"
-                  />
-                </div>
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={showFilters ? 'border-primary' : ''}
-                >
-                  <Icon name="Filter" size={20} />
-                </Button>
-              </div>
-
-              {showFilters && (
-                <Card className="max-w-2xl mx-auto mt-4 animate-scale-in">
-                  <CardContent className="p-6 space-y-6">
-                    <div className="space-y-3">
-                      <Label>Цена: {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()} ₽</Label>
-                      <Slider
-                        min={0}
-                        max={200000}
-                        step={5000}
-                        value={priceRange}
-                        onValueChange={(value) => setPriceRange(value as [number, number])}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Состояние</Label>
-                        <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Все</SelectItem>
-                            <SelectItem value="Новый">Новый</SelectItem>
-                            <SelectItem value="Б/У">Б/У</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Город</Label>
-                        <Select value={selectedCity} onValueChange={setSelectedCity}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Все города</SelectItem>
-                            {cities.map(city => (
-                              <SelectItem key={city} value={city}>{city}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => {
-                        setPriceRange([0, 200000]);
-                        setSelectedCondition('all');
-                        setSelectedCity('all');
-                      }}
-                    >
-                      <Icon name="X" size={16} className="mr-2" />
-                      Сбросить фильтры
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {!showFavorites && (
-              <div className="mb-12 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                <h3 className="text-xl font-semibold mb-6">Категории</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {categories.map((category) => (
-                    <button
-                      key={category.name}
-                      onClick={() => setSelectedCategory(
-                        selectedCategory === category.name ? null : category.name
-                      )}
-                      className={`group p-6 rounded-xl border-2 transition-all hover:scale-105 ${
-                        selectedCategory === category.name
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <Icon 
-                        name={category.icon as any} 
-                        size={32} 
-                        className={`mx-auto mb-3 transition-colors ${
-                          selectedCategory === category.name
-                            ? 'text-primary'
-                            : 'text-muted-foreground group-hover:text-primary'
-                        }`}
-                      />
-                      <p className={`font-medium transition-colors ${
-                        selectedCategory === category.name
-                          ? 'text-primary'
-                          : 'text-foreground'
-                      }`}>
-                        {category.name}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-xl font-semibold">
-                {showFavorites ? 'Ваши избранные товары' : (selectedCategory ? `${selectedCategory}` : 'Все объявления')}
-                <span className="text-muted-foreground ml-2">
-                  ({filteredProducts.length})
-                </span>
-              </h3>
-              {selectedCategory && !showFavorites && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  <Icon name="X" size={16} className="mr-1" />
-                  Сбросить фильтр
-                </Button>
-              )}
-            </div>
-
-            {filteredProducts.length === 0 ? (
-              <div className="text-center py-12">
-                <Icon name="Package" size={64} className="mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-xl text-muted-foreground">
-                  {showFavorites ? 'У вас пока нет избранных товаров' : 'Товары не найдены'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                {filteredProducts.map((product, index) => (
-                  <Card
-                    key={product.id}
-                    className="group cursor-pointer overflow-hidden border-border hover:border-primary/50 transition-all hover:scale-[1.02] animate-scale-in"
-                    style={{ animationDelay: `${0.05 * index}s` }}
-                  >
-                    <div className="aspect-square overflow-hidden bg-muted" onClick={() => setSelectedProduct(product)}>
-                      <img
-                        src={product.image}
-                        alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                    </div>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <Badge
-                          variant={product.condition === 'Новый' ? 'default' : 'secondary'}
-                          className={product.condition === 'Новый' ? 'bg-secondary' : ''}
-                        >
-                          {product.condition}
-                        </Badge>
-                        <button 
-                          className="text-muted-foreground hover:text-secondary transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleFavorite(product.id);
-                          }}
-                        >
-                          <Icon 
-                            name="Heart" 
-                            size={20} 
-                            className={favorites.includes(product.id) ? 'fill-current text-secondary' : ''}
-                          />
-                        </button>
-                      </div>
-                      <div onClick={() => setSelectedProduct(product)}>
-                        <h4 className="font-semibold text-lg mb-1 line-clamp-1">
-                          {product.title}
-                        </h4>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                          <Icon name="MapPin" size={14} />
-                          <span>{product.city}</span>
-                        </div>
-                        <p className="text-2xl font-bold text-primary">
-                          {product.price.toLocaleString('ru-RU')} ₽
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </>
-        )}
+          ))}
+        </div>
       </main>
 
       <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
@@ -771,36 +396,21 @@ export default function Index() {
                       <Icon name="Phone" size={18} className="mr-2" />
                       Показать телефон
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full" 
-                      size="lg"
-                      onClick={() => {
-                        startChat(selectedProduct);
-                        setSelectedProduct(null);
-                      }}
-                    >
+                    <Button variant="outline" className="w-full" size="lg">
                       <Icon name="MessageCircle" size={18} className="mr-2" />
                       Написать сообщение
                     </Button>
                   </div>
 
                   <div className="pt-4 border-t border-border">
-                    <div 
-                      className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
-                      onClick={() => {
-                        setSelectedSeller(selectedProduct.sellerId);
-                        setSelectedProduct(null);
-                      }}
-                    >
+                    <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                         <Icon name="User" size={20} className="text-background" />
                       </div>
                       <div>
-                        <p className="font-medium">{selectedProduct.sellerName}</p>
+                        <p className="font-medium">Продавец</p>
                         <p className="text-sm text-muted-foreground">На сайте с 2024</p>
                       </div>
-                      <Icon name="ChevronRight" size={20} className="ml-auto text-muted-foreground" />
                     </div>
                   </div>
                 </div>
